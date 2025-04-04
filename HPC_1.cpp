@@ -6,11 +6,11 @@
 
 using namespace std;
 
-class Graph 
+class Graph
 {
 public:
     int V;
-    vector<vector<int> > adj;
+    vector<vector<int>> adj;
 
     Graph(int V) {
         this->V = V;
@@ -29,18 +29,22 @@ void parallelBFS(Graph &graph, int start) {
     q.push(start);
     visited[start] = true;
 
-    #pragma omp parallel
-    {
-        while (!q.empty()) {
-            int u = q.front();
-            q.pop();
-            cout << u << " ";
-            
-            #pragma omp for
-            for (int v : graph.adj[u]) {
-                if (!visited[v]) {
-                    visited[v] = true;
-                    q.push(v);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        cout << u << " ";
+
+        #pragma omp parallel for
+        for (int i = 0; i < graph.adj[u].size(); i++)
+        {
+            int v = graph.adj[u][i];
+            if (!visited[v]) {
+                #pragma omp critical
+                {
+                    if (!visited[v]) {
+                        visited[v] = true;
+                        q.push(v);
+                    }
                 }
             }
         }
@@ -52,20 +56,20 @@ void parallelDFS(Graph &graph, int start) {
     stack<int> s;
     s.push(start);
 
-    #pragma omp parallel
+    while (!s.empty())
     {
-        while (!s.empty()) {
-            int u = s.top();
-            s.pop();
-            if (!visited[u]) {
-                visited[u] = true;
-                cout << u << " ";
-                
-                #pragma omp for
-                for (int v : graph.adj[u]) {
-                    if (!visited[v]) {
-                        s.push(v);
-                    }
+        int u = s.top();
+        s.pop();
+        if (!visited[u]) {
+            visited[u] = true;
+            cout << u << " ";
+
+            #pragma omp parallel for
+            for (int i = 0; i < graph.adj[u].size(); i++) {
+                int v = graph.adj[u][i];
+                if (!visited[v]) {
+                    #pragma omp critical
+                    s.push(v);
                 }
             }
         }
@@ -88,3 +92,4 @@ int main() {
 
     return 0;
 }
+
